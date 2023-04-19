@@ -1,8 +1,12 @@
 package newamazingpvp.tracker;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.plugin.Plugin;
@@ -15,13 +19,20 @@ import org.bukkit.command.CommandSender;
 import java.util.HashMap;
 import java.util.UUID;
 
-public class Tracker extends JavaPlugin implements CommandExecutor {
+public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     private final HashMap<UUID, UUID> trackingPlayers = new HashMap<>();
+    private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
 
     public void onEnable() {
         getCommand("track").setExecutor(this);
+        getServer().getPluginManager().registerEvents(this, this);
         startCompassUpdateTask();
+    }
+
+    @EventHandler
+    public void onPlayerPortalEvent(PlayerPortalEvent event) {
+        lastPortalLocations.put(event.getPlayer().getUniqueId(), event.getFrom());
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -60,10 +71,17 @@ public class Tracker extends JavaPlugin implements CommandExecutor {
                     Player player = Bukkit.getPlayer(playerUUID);
                     if (player != null) {
                         Player target = Bukkit.getPlayer(trackingPlayers.get(playerUUID));
-                        if (target != null && player.getWorld() == target.getWorld()) {
+                        if (target != null) {
                             ItemStack compass = getCompassFromInventory(player);
                             if (compass != null) {
-                                updateCompass(compass, target);
+                                if (player.getWorld() == target.getWorld()) {
+                                    updateCompass(compass, target.getLocation());
+                                } else {
+                                    Location portalLocation = lastPortalLocations.get(target.getUniqueId());
+                                    if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
+                                        updateCompass(compass, portalLocation);
+                                    }
+                                }
                             }
                         }
                     }
@@ -81,9 +99,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor {
         return null;
     }
 
-    private void updateCompass(ItemStack compass, Player target) {
+    private void updateCompass(ItemStack compass, Location location) {
         CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
-        compassMeta.setLodestone(target.getLocation());
+        compassMeta.setLodestone(location);
         compassMeta.setLodestoneTracked(true);
         compass.setItemMeta(compassMeta);
     }
