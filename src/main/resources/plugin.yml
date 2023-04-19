@@ -1,0 +1,12 @@
+name: Tracker
+version: '${project.version}'
+main: newamazingpvp.tracker.Tracker
+api-version: 1.18
+authors: [ NewAmazingPVP ]
+commands:
+  track:
+    description: Track a player's location
+    usage: /track <player>
+    aliases: [compass]
+
+description: Simple minecraft plugin to track players in the world
