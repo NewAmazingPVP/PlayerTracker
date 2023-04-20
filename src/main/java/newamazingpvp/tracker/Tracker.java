@@ -1,12 +1,17 @@
 package newamazingpvp.tracker;
 
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.plugin.Plugin;
@@ -35,6 +40,11 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         lastPortalLocations.put(event.getPlayer().getUniqueId(), event.getFrom());
     }
 
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        trackingPlayers.remove(event.getPlayer().getUniqueId());
+    }
+
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("track")) {
             if (!(sender instanceof Player)) {
@@ -56,6 +66,12 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
+            // Check if the player and target are in the same dimension
+            if (player.getWorld() != target.getWorld()) {
+                sender.sendMessage("The target is not in the same dimension as you!");
+                return true;
+            }
+
             trackingPlayers.put(player.getUniqueId(), target.getUniqueId());
             player.sendMessage("Compass is now pointing towards " + target.getName());
             return true;
@@ -63,6 +79,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
         return false;
     }
+
 
     private void startCompassUpdateTask() {
         new BukkitRunnable() {
@@ -76,11 +93,17 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                             if (compass != null) {
                                 if (player.getWorld() == target.getWorld()) {
                                     updateCompass(compass, target.getLocation());
+                                    String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
+                                    TextComponent textComponent = new TextComponent(message);
+                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 } else {
                                     Location portalLocation = lastPortalLocations.get(target.getUniqueId());
                                     if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
                                         updateCompass(compass, portalLocation);
                                     }
+                                    String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
+                                    TextComponent textComponent = new TextComponent(message);
+                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 }
                             }
                         }
@@ -89,6 +112,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
         }.runTaskTimer((Plugin) this, 0L, 0L);
     }
+
 
     private ItemStack getCompassFromInventory(Player player) {
         for (ItemStack item : player.getInventory().getContents()) {
