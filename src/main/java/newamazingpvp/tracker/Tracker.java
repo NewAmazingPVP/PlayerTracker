@@ -61,18 +61,18 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             Player target = Bukkit.getPlayer(args[0]);
 
             if (target == null) {
-                sender.sendMessage("Player not found!");
+                sender.sendMessage(ChatColor.RED + "Player not found!");
                 return true;
             }
 
             // Check if the player and target are in the same dimension
             if (player.getWorld() != target.getWorld()) {
-                sender.sendMessage("The target is not in the same dimension as you!");
+                sender.sendMessage(ChatColor.RED + "The target is not in the same dimension as you!");
                 return true;
             }
 
             trackingPlayers.put(player.getUniqueId(), target.getUniqueId());
-            player.sendMessage("Compass is now pointing towards " + target.getName());
+            player.sendMessage(ChatColor.GREEN "Compass is now pointing towards " + target.getName());
             return true;
         }
 

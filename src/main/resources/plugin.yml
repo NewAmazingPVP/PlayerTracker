@@ -1,7 +1,7 @@
-name: Tracker
-version: '${project.version}'
+name: PlayerTracker
+version: 1.0
 main: newamazingpvp.tracker.Tracker
-api-version: 1.18
+api-version: 1.16
 authors: [ NewAmazingPVP ]
 commands:
   track:
