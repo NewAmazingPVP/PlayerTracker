@@ -21,6 +21,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
@@ -29,9 +30,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
 
     public void onEnable() {
-        getCommand("track").setExecutor(this);
+        Objects.requireNonNull(getCommand("track")).setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
-        startCompassUpdateTask();
+        compassUpdate();
     }
 
     @EventHandler
@@ -72,7 +73,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
 
             trackingPlayers.put(player.getUniqueId(), target.getUniqueId());
-            player.sendMessage(ChatColor.GREEN "Compass is now pointing towards " + target.getName());
+            player.sendMessage(ChatColor.GREEN + "Compass is now pointing towards " + target.getName());
             return true;
         }
 
@@ -80,7 +81,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     }
 
 
-    private void startCompassUpdateTask() {
+    private void compassUpdate() {
         new BukkitRunnable() {
             public void run() {
                 for (UUID playerUUID : trackingPlayers.keySet()) {
@@ -91,14 +92,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                             ItemStack compass = getCompassFromInventory(player);
                             if (compass != null) {
                                 if (player.getWorld() == target.getWorld()) {
-                                    updateCompass(compass, target.getLocation());
+                                    lodestoneCompass(compass, target.getLocation());
                                     String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
                                     TextComponent textComponent = new TextComponent(message);
                                     player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 } else {
                                     Location portalLocation = lastPortalLocations.get(target.getUniqueId());
                                     if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
-                                        updateCompass(compass, portalLocation);
+                                        lodestoneCompass(compass, portalLocation);
                                     }
                                     String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
                                     TextComponent textComponent = new TextComponent(message);
@@ -122,7 +123,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return null;
     }
 
-    private void updateCompass(ItemStack compass, Location location) {
+    private void lodestoneCompass(ItemStack compass, Location location) {
         CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
         compassMeta.setLodestone(location);
         compassMeta.setLodestoneTracked(true);
