@@ -13,7 +13,6 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.CompassMeta;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.command.Command;
@@ -110,7 +109,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                     }
                 }
             }
-        }.runTaskTimer((Plugin) this, 0L, 0L);
+        }.runTaskTimer(this, 0L, 0L);
     }
 
 
@@ -125,6 +124,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     private void lodestoneCompass(ItemStack compass, Location location) {
         CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
+        assert compassMeta != null;
         compassMeta.setLodestone(location);
         compassMeta.setLodestoneTracked(true);
         compass.setItemMeta(compassMeta);
