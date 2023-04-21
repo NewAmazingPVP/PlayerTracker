@@ -94,23 +94,17 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                 if (player.getWorld().getEnvironment() == World.Environment.NORMAL && target.getWorld().getEnvironment() == World.Environment.NORMAL) {
                                     setNormalCompass(compass);
                                     player.setCompassTarget(target.getLocation());
-                                    String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
-                                    TextComponent textComponent = new TextComponent(message);
-                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 } else if (player.getWorld() == target.getWorld()) {
                                     setLodestoneCompass(compass, target.getLocation());
-                                    String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
-                                    TextComponent textComponent = new TextComponent(message);
-                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 } else {
                                     Location portalLocation = lastPortalLocations.get(target.getUniqueId());
                                     if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
                                         setLodestoneCompass(compass, portalLocation);
                                     }
-                                    String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
-                                    TextComponent textComponent = new TextComponent(message);
-                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 }
+                                String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
+                                TextComponent textComponent = new TextComponent(message);
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                             } else {
                                 setNormalCompass(compass);
                                 player.setCompassTarget(generateRandomLocation(player));
@@ -119,8 +113,32 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, 0L);
+        }.runTaskTimer(this, 0L, 0L); // Update interval for normal compasses
+
+        new BukkitRunnable() {
+            public void run() {
+                for (UUID playerUUID : trackingPlayers.keySet()) {
+                    Player player = Bukkit.getPlayer(playerUUID);
+                    if (player != null) {
+                        ItemStack compass = getCompassFromInventory(player);
+                        if (compass != null) {
+                            CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
+                            assert compassMeta != null;
+                            boolean isLodestone = compassMeta.isLodestoneTracked();
+                            if (isLodestone) {
+                                Player target = Bukkit.getPlayer(trackingPlayers.get(playerUUID));
+                                if (target != null && player.getWorld() == target.getWorld()) {
+                                    setLodestoneCompass(compass, target.getLocation());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(this, 0L, 20L); // Update interval for lodestone compasses
     }
+
+
 
     private Location generateRandomLocation(Player player) {
         int offsetX = (int) (Math.random() * 201) - 100;
