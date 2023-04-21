@@ -2,10 +2,7 @@ package newamazingpvp.tracker;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -58,6 +55,11 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
+            if (getCompassFromInventory(player) == null) {
+                sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
+                return true;
+            }
+
             Player target = Bukkit.getPlayer(args[0]);
 
             if (target == null) {
@@ -79,7 +81,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return false;
     }
 
-
     private void compassUpdate() {
         new BukkitRunnable() {
             public void run() {
@@ -87,23 +88,32 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                     Player player = Bukkit.getPlayer(playerUUID);
                     if (player != null) {
                         Player target = Bukkit.getPlayer(trackingPlayers.get(playerUUID));
-                        if (target != null) {
-                            ItemStack compass = getCompassFromInventory(player);
-                            if (compass != null) {
-                                if (player.getWorld() == target.getWorld()) {
-                                    lodestoneCompass(compass, target.getLocation());
+                        ItemStack compass = getCompassFromInventory(player);
+                        if (compass != null) {
+                            if (target != null) {
+                                if (player.getWorld().getEnvironment() == World.Environment.NORMAL && target.getWorld().getEnvironment() == World.Environment.NORMAL) {
+                                    setNormalCompass(compass);
+                                    player.setCompassTarget(target.getLocation());
+                                    String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
+                                    TextComponent textComponent = new TextComponent(message);
+                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
+                                } else if (player.getWorld() == target.getWorld()) {
+                                    setLodestoneCompass(compass, target.getLocation());
                                     String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
                                     TextComponent textComponent = new TextComponent(message);
                                     player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 } else {
                                     Location portalLocation = lastPortalLocations.get(target.getUniqueId());
                                     if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
-                                        lodestoneCompass(compass, portalLocation);
+                                        setLodestoneCompass(compass, portalLocation);
                                     }
                                     String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
                                     TextComponent textComponent = new TextComponent(message);
                                     player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                                 }
+                            } else {
+                                setNormalCompass(compass);
+                                player.setCompassTarget(generateRandomLocation(player));
                             }
                         }
                     }
@@ -112,6 +122,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         }.runTaskTimer(this, 0L, 0L);
     }
 
+    private Location generateRandomLocation(Player player) {
+        int offsetX = (int) (Math.random() * 201) - 100;
+        int offsetZ = (int) (Math.random() * 201) - 100;
+        Location playerLocation = player.getLocation();
+        int x = playerLocation.getBlockX() + offsetX;
+        int z = playerLocation.getBlockZ() + offsetZ;
+        return new Location(player.getWorld(), x, 64, z);
+    }
 
     private ItemStack getCompassFromInventory(Player player) {
         for (ItemStack item : player.getInventory().getContents()) {
@@ -122,7 +140,16 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return null;
     }
 
-    private void lodestoneCompass(ItemStack compass, Location location) {
+    private void setNormalCompass(ItemStack compass) {
+        CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
+        assert compassMeta != null;
+        if (compassMeta.isLodestoneTracked()) {
+            compassMeta.setLodestone(null);
+            compassMeta.setLodestoneTracked(false);
+            compass.setItemMeta(compassMeta);
+        }
+    }
+    private void setLodestoneCompass(ItemStack compass, Location location) {
         CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
         assert compassMeta != null;
         compassMeta.setLodestone(location);
