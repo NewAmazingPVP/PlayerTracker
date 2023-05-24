@@ -9,7 +9,7 @@ logoff_tracking: false
 # Enable to allow player's compass to track portals (if disabled the compass will spin in circles when target changes dimensions)
 portal_tracking: true
 
-# Enable this to allow players to track with compass in inventory (dont know why anybody would need this but)
+# Enable this to allow players to track with compass in inventory (don't know why anybody would need this but)
 noCompass_tracking: false
 
 # Enable this to allow players to get compass in inventory if they don't have it
