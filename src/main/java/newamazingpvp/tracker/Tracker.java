@@ -3,6 +3,8 @@ package newamazingpvp.tracker;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,6 +18,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
@@ -24,8 +28,37 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     private final HashMap<UUID, UUID> trackingPlayers = new HashMap<>();
     private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
+    private boolean logOffTracking;
+    private FileConfiguration config;
 
     public void onEnable() {
+        config = getConfig();
+
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdir();
+        }
+        File file = new File(getDataFolder(), "config.yml");
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+
+                FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+
+                configuration.set("log_off_tracking.enabled", true);
+                configuration.set("portal_tracking.enabled", true);
+                configuration.set("give_compass_with_command.enabled", false);
+                configuration.set("give_compass_with_command.enabled", false);
+                configuration.set("tracking_message", "&aTracking &2&l{target_name}");
+
+                configuration.save(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        logOffTracking = getConfig().getBoolean("log_off_tracking.enabled");
+
+
+
         Objects.requireNonNull(getCommand("track")).setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
         compassUpdate();
@@ -42,6 +75,11 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        if (!sender.hasPermission(config.getString("track_command_permission"))) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+            return true;
+        }
+
         if (cmd.getName().equalsIgnoreCase("track")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage("This command can only be used by a player!");
@@ -102,7 +140,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                         setLodestoneCompass(compass, portalLocation);
                                     }
                                 }
-                                String message = ChatColor.GREEN + "Tracking " + ChatColor.DARK_GREEN + ChatColor.BOLD + target.getName();
+                                String message = ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(config.getString("tracking_message"))).replace("{target_name}", target.getName());
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                             } else {
@@ -173,5 +211,16 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         compassMeta.setLodestone(location);
         compassMeta.setLodestoneTracked(true);
         compass.setItemMeta(compassMeta);
+    }
+
+    public FileConfiguration getConfig() {
+        try {
+            File configFile = new File(getDataFolder(), "config.yml");
+            FileConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);
+            return configuration;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
