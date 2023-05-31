@@ -71,7 +71,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        trackingPlayers.remove(event.getPlayer().getUniqueId());
+        if (!config.getBoolean("logoff_tracking")){
+            trackingPlayers.remove(event.getPlayer().getUniqueId());
+        }
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -93,9 +95,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
-            if (getCompassFromInventory(player) == null) {
-                sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
-                return true;
+            if (!config.getBoolean("noCompass_tracking"))
+                if (getCompassFromInventory(player) == null) {
+                    if (config.getBoolean("giveCompass")){
+                        player.getInventory().addItem(new ItemStack(Material.COMPASS));
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
+                        return true;
+                    }
             }
 
             Player target = Bukkit.getPlayer(args[0]);
@@ -106,9 +113,11 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
 
             // Check if the player and target are in the same dimension
-            if (player.getWorld() != target.getWorld()) {
-                sender.sendMessage(ChatColor.RED + "The target is not in the same dimension as you!");
-                return true;
+            if (!config.getBoolean("multiDimensional_tracking")){
+                if (player.getWorld() != target.getWorld()) {
+                    sender.sendMessage(ChatColor.RED + "The target is not in the same dimension as you!");
+                    return true;
+                }
             }
 
             trackingPlayers.put(player.getUniqueId(), target.getUniqueId());
@@ -173,7 +182,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, 20L); // Update interval for lodestone compasses
+        }.runTaskTimer(this, 0L, config.getLong("lodestoneCompass_updateInterval"));
     }
 
 
