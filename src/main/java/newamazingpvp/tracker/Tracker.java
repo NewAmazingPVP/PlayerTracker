@@ -77,7 +77,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!sender.hasPermission(config.getString("track_command_permission"))) {
+        if (!sender.hasPermission("playerTracker.track")) {
             sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
             return true;
         }
@@ -153,8 +153,10 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                             } else {
-                                setNormalCompass(compass);
-                                player.setCompassTarget(generateRandomLocation(player));
+                                if (!config.getBoolean("logoff_tracking")){
+                                    setNormalCompass(compass);
+                                    player.setCompassTarget(generateRandomLocation(player));
+                                }
                             }
                         }
                     }
