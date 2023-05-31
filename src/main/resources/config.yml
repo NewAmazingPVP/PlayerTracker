@@ -14,3 +14,6 @@ noCompass_tracking: false
 
 # Enable this to allow players to get compass in inventory if they don't have it
 giveCompass: false
+
+# Change this if you feel like lodestone compass is shaking and upating too much (in ticks)
+lodestoneCompass_updateInterval: 20
