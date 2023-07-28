@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -29,34 +30,12 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     private final HashMap<UUID, UUID> trackingPlayers = new HashMap<>();
     private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
     private boolean logOffTracking;
-    private FileConfiguration config;
 
     public void onEnable() {
-        config = getConfig();
 
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
         }
-        File file = new File(getDataFolder(), "config.yml");
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-
-                FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-
-                configuration.set("log_off_tracking.enabled", true);
-                configuration.set("portal_tracking.enabled", true);
-                configuration.set("give_compass_with_command.enabled", false);
-                configuration.set("give_compass_with_command.enabled", false);
-                configuration.set("tracking_message", "&aTracking &2&l{target_name}");
-
-                configuration.save(file);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        logOffTracking = getConfig().getBoolean("log_off_tracking.enabled");
-
 
 
         Objects.requireNonNull(getCommand("track")).setExecutor(this);
@@ -69,19 +48,8 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         lastPortalLocations.put(event.getPlayer().getUniqueId(), event.getFrom());
     }
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        if (!config.getBoolean("logoff_tracking")){
-            trackingPlayers.remove(event.getPlayer().getUniqueId());
-        }
-    }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!sender.hasPermission("playerTracker.track")) {
-            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
-            return true;
-        }
-
         if (cmd.getName().equalsIgnoreCase("track")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage("This command can only be used by a player!");
@@ -95,14 +63,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
-            if (!config.getBoolean("noCompass_tracking"))
-                if (getCompassFromInventory(player) == null) {
-                    if (config.getBoolean("giveCompass")){
-                        player.getInventory().addItem(new ItemStack(Material.COMPASS));
-                    } else {
-                        sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
-                        return true;
-                    }
+            if (getCompassFromInventory(player) == null) {
+                    sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
+                    return true;
             }
 
             Player target = Bukkit.getPlayer(args[0]);
@@ -112,12 +75,33 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
-            // Check if the player and target are in the same dimension
-            if (!config.getBoolean("multiDimensional_tracking")){
-                if (player.getWorld() != target.getWorld()) {
-                    sender.sendMessage(ChatColor.RED + "The target is not in the same dimension as you!");
-                    return true;
-                }
+            long targetPlaytime = getPlaytime(target);
+            long requiredPlaytimeTicks = 3 * 60 * 60 * 20;
+
+            if (targetPlaytime < requiredPlaytimeTicks) {
+                long remainingTicks = requiredPlaytimeTicks - targetPlaytime;
+                long remainingSeconds = remainingTicks / 20;
+
+                int remainingHours = (int) (remainingSeconds / 3600);
+                int remainingMinutes = (int) ((remainingSeconds % 3600) / 60);
+                int remainingSecondsLeft = (int) (remainingSeconds % 60);
+
+                String remainingTimeMessage = ChatColor.RED + "Cannot track player because they have newbie protection for " +
+                        ChatColor.YELLOW + remainingHours + " hours, " +
+                        remainingMinutes + " minutes, " +
+                        remainingSecondsLeft + " seconds.";
+
+                sender.sendMessage(remainingTimeMessage);
+                return true;
+            }
+
+            if(diamondBlockCount(player) > 0){
+                ItemStack block = new ItemStack(Material.DIAMOND_BLOCK, 1);
+                player.getInventory().removeItem(block);
+                sender.sendMessage(ChatColor.GREEN + "1 diamond block taken to track player");
+            } else {
+                sender.sendMessage(ChatColor.RED + "You need a diamond block to track player");
+                return true;
             }
 
             trackingPlayers.put(player.getUniqueId(), target.getUniqueId());
@@ -126,6 +110,23 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         }
 
         return false;
+    }
+
+    public static int diamondBlockCount(Player player) {
+        int diamondCount = 0;
+        PlayerInventory inventory = player.getInventory();
+
+        for (ItemStack item : inventory.getContents()) {
+            if (item != null && item.getType() == Material.DIAMOND_BLOCK) {
+                diamondCount += item.getAmount();
+            }
+        }
+
+        return diamondCount;
+    }
+
+    private long getPlaytime(Player player) {
+        return player.getStatistic(Statistic.PLAY_ONE_MINUTE);
     }
 
     private void compassUpdate() {
@@ -149,14 +150,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                         setLodestoneCompass(compass, portalLocation);
                                     }
                                 }
-                                String message = ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(config.getString("tracking_message"))).replace("{target_name}", target.getName());
+                                String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName();
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
-                            } else {
-                                if (!config.getBoolean("logoff_tracking")){
-                                    setNormalCompass(compass);
-                                    player.setCompassTarget(generateRandomLocation(player));
-                                }
                             }
                         }
                     }
@@ -184,7 +180,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, config.getLong("lodestoneCompass_updateInterval"));
+        }.runTaskTimer(this, 0L, 20L);
     }
 
 
@@ -224,14 +220,4 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         compass.setItemMeta(compassMeta);
     }
 
-    public FileConfiguration getConfig() {
-        try {
-            File configFile = new File(getDataFolder(), "config.yml");
-            FileConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);
-            return configuration;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 }
