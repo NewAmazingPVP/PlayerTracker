@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -95,6 +96,24 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
+            long targetDeathTime = getDeathTime(target);
+            long requiredDeathTime = 30 * 60 * 20;
+
+            if (targetDeathTime < requiredDeathTime) {
+                long remainingTicks = requiredDeathTime - targetDeathTime;
+                long remainingSeconds = remainingTicks / 20;
+
+                int remainingMinutes = (int) ((remainingSeconds % 3600) / 60);
+                int remainingSecondsLeft = (int) (remainingSeconds % 60);
+
+                String remainingTimeMessage = ChatColor.RED + "Cannot track because they died recently and have death protection for " +
+                        ChatColor.YELLOW + remainingMinutes + " minutes, " +
+                        remainingSecondsLeft + " seconds.";
+
+                sender.sendMessage(remainingTimeMessage);
+                return true;
+            }
+
             if(diamondBlockCount(player) > 0){
                 ItemStack block = new ItemStack(Material.DIAMOND_BLOCK, 1);
                 player.getInventory().removeItem(block);
@@ -129,6 +148,15 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return player.getStatistic(Statistic.PLAY_ONE_MINUTE);
     }
 
+    private long getDeathTime(Player player) {
+        return player.getStatistic(Statistic.TIME_SINCE_DEATH );
+    }
+
+    @EventHandler
+    private void onPlayerDeath(PlayerDeathEvent e){
+        Player player = e.getEntity();
+        trackingPlayers.remove(player.getUniqueId());
+    }
     private void compassUpdate() {
         new BukkitRunnable() {
             public void run() {
@@ -153,6 +181,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                 String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName();
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
+                            } else {
+                                setNormalCompass(compass);
+                                player.setCompassTarget(generateRandomLocation(player));
                             }
                         }
                     }
