@@ -49,6 +49,12 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         lastPortalLocations.put(event.getPlayer().getUniqueId(), event.getFrom());
     }
 
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        trackingPlayers.remove(event.getPlayer().getUniqueId());
+    }
+
+
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("track")) {
@@ -97,7 +103,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
 
             long targetDeathTime = getDeathTime(target);
-            long requiredDeathTime = 30 * 60 * 20;
+            long requiredDeathTime = 15 * 60 * 20;
 
             if (targetDeathTime < requiredDeathTime) {
                 long remainingTicks = requiredDeathTime - targetDeathTime;
@@ -114,14 +120,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
-            if(diamondBlockCount(player) > 0){
+            /*if(diamondBlockCount(player) > 0){
                 ItemStack block = new ItemStack(Material.DIAMOND_BLOCK, 1);
                 player.getInventory().removeItem(block);
                 sender.sendMessage(ChatColor.GREEN + "1 diamond block taken to track player");
             } else {
                 sender.sendMessage(ChatColor.RED + "You need a diamond block to track player");
                 return true;
-            }
+            }*/
 
             trackingPlayers.put(player.getUniqueId(), target.getUniqueId());
             player.sendMessage(ChatColor.GREEN + "Compass is now pointing towards " + target.getName());
@@ -157,6 +163,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         Player player = e.getEntity();
         trackingPlayers.remove(player.getUniqueId());
     }
+
     private void compassUpdate() {
         new BukkitRunnable() {
             public void run() {
