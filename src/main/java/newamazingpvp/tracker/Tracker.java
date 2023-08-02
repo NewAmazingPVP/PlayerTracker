@@ -140,7 +140,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
 
             if (playerInvisCheck(target)) {
-                sender.sendMessage(ChatColor.RED + "Cannot track player because they are  and not combat tagged.");
+                sender.sendMessage(ChatColor.RED + "Cannot track player because they are invis and not combat tagged.");
                 return true;
             }
 
@@ -209,7 +209,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                         setLodestoneCompass(compass, portalLocation);
                                     }
                                 }
-                                String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName();
+                                String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + player.getLocation().distance(target.getLocation()) + " blocks away" ;
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                             } else {
