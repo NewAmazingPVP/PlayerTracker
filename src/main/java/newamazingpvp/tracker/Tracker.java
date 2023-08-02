@@ -18,6 +18,7 @@ import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.command.Command;
@@ -53,7 +54,8 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     @EventHandler
     public void invisCheck(EntityPotionEffectEvent event) {
-        if(event.getNewEffect().getType().equals(PotionEffectType.INVISIBILITY) && event.getEntity() instanceof Player){
+        System.out.println(event.getNewEffect());
+        if(event.getNewEffect() != null && event.getNewEffect().getType().equals(PotionEffectType.INVISIBILITY) && event.getEntity() instanceof Player){
             Player player = (Player) event.getEntity();
             trackingPlayers.remove(player.getUniqueId());
         }
@@ -71,9 +73,15 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return combatManager.isInCombat(player);
     }
 
-    public boolean playerInvisCheck(Player player){
-        return player.getActivePotionEffects().contains(PotionEffectType.INVISIBILITY) && !isInCombat(player);
+    public boolean playerInvisCheck(Player player) {
+        for (PotionEffect effect : player.getActivePotionEffects()) {
+            if (effect.getType() == PotionEffectType.INVISIBILITY && !isInCombat(player)) {
+                return true;
+            }
+        }
+        return false;
     }
+
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("track")) {
@@ -140,7 +148,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
 
             if (playerInvisCheck(target)) {
-                sender.sendMessage(ChatColor.RED + "Cannot track player because they are invis and not combat tagged.");
+                sender.sendMessage(ChatColor.RED + "Cannot track player because they are invis and not combat tagged");
                 return true;
             }
 
@@ -209,7 +217,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                         setLodestoneCompass(compass, portalLocation);
                                     }
                                 }
-                                String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + player.getLocation().distance(target.getLocation()) + " blocks away" ;
+                                int distance;
+                                if(player.getWorld().getEnvironment() == target.getWorld().getEnvironment()){
+                                    distance = (int) player.getLocation().distance(target.getLocation());
+                                } else {
+                                    Location portalLocation = lastPortalLocations.get(target.getUniqueId());
+                                    distance = (int) player.getLocation().distance(portalLocation);
+                                }
+                                String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away" ;
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                             } else {
