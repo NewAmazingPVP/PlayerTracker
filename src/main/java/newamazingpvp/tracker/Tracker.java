@@ -218,11 +218,15 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                     }
                                 }
                                 int distance;
-                                if(player.getWorld().getEnvironment() == target.getWorld().getEnvironment()){
+                                if (player.getWorld().getEnvironment() == target.getWorld().getEnvironment()) {
                                     distance = (int) player.getLocation().distance(target.getLocation());
                                 } else {
                                     Location portalLocation = lastPortalLocations.get(target.getUniqueId());
-                                    distance = (int) player.getLocation().distance(portalLocation);
+                                    if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
+                                        distance = (int) player.getLocation().distance(portalLocation);
+                                    } else {
+                                        distance = -1;
+                                    }
                                 }
                                 String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away" ;
                                 TextComponent textComponent = new TextComponent(message);
