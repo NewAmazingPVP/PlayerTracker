@@ -1,27 +1,29 @@
 package newamazingpvp.tracker;
 
+import com.github.sirblobman.combatlogx.api.ICombatLogX;
+import com.github.sirblobman.combatlogx.api.manager.ICombatManager;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.CompassMeta;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,12 +35,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     private boolean logOffTracking;
 
     public void onEnable() {
-
-        if (!getDataFolder().exists()) {
-            getDataFolder().mkdir();
-        }
-
-
+        if (!getDataFolder().exists()) {getDataFolder().mkdir();}
         Objects.requireNonNull(getCommand("track")).setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
         compassUpdate();
@@ -54,7 +51,29 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         trackingPlayers.remove(event.getPlayer().getUniqueId());
     }
 
+    @EventHandler
+    public void invisCheck(EntityPotionEffectEvent event) {
+        if(event.getNewEffect().getType().equals(PotionEffectType.INVISIBILITY) && event.getEntity() instanceof Player){
+            Player player = (Player) event.getEntity();
+            trackingPlayers.remove(player.getUniqueId());
+        }
+    }
 
+    public ICombatLogX getAPI() {
+        PluginManager pluginManager = Bukkit.getPluginManager();
+        Plugin plugin = pluginManager.getPlugin("CombatLogX");
+        return (ICombatLogX) plugin;
+    }
+
+    public boolean isInCombat(Player player) {
+        ICombatLogX plugin = getAPI();
+        ICombatManager combatManager = plugin.getCombatManager();
+        return combatManager.isInCombat(player);
+    }
+
+    public boolean playerInvisCheck(Player player){
+        return player.getActivePotionEffects().contains(PotionEffectType.INVISIBILITY) && !isInCombat(player);
+    }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("track")) {
@@ -117,6 +136,11 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                         remainingSecondsLeft + " seconds.";
 
                 sender.sendMessage(remainingTimeMessage);
+                return true;
+            }
+
+            if (playerInvisCheck(target)) {
+                sender.sendMessage(ChatColor.RED + "Cannot track player because they are  and not combat tagged.");
                 return true;
             }
 
