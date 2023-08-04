@@ -54,7 +54,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     @EventHandler
     public void invisCheck(EntityPotionEffectEvent event) {
-        System.out.println(event.getNewEffect());
         if(event.getNewEffect() != null && event.getNewEffect().getType().equals(PotionEffectType.INVISIBILITY) && event.getEntity() instanceof Player){
             Player player = (Player) event.getEntity();
             trackingPlayers.remove(player.getUniqueId());
