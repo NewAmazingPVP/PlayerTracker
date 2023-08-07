@@ -1,5 +1,7 @@
 package newamazingpvp.tracker;
 
+import com.earth2me.essentials.EssentialsTimer;
+import com.earth2me.essentials.IEssentials;
 import com.github.sirblobman.combatlogx.api.ICombatLogX;
 import com.github.sirblobman.combatlogx.api.manager.ICombatManager;
 import net.md_5.bungee.api.ChatMessageType;
@@ -10,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -25,15 +28,17 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.UUID;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
 
 public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     private final HashMap<UUID, UUID> trackingPlayers = new HashMap<>();
     private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
     private boolean logOffTracking;
+
+    private final LocalDateTime serverStartTime = LocalDateTime.of(2023, 7, 27, 11, 30);
 
     public void onEnable() {
         if (!getDataFolder().exists()) {getDataFolder().mkdir();}
@@ -52,33 +57,86 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         trackingPlayers.remove(event.getPlayer().getUniqueId());
     }
 
+
     @EventHandler
-    public void invisCheck(EntityPotionEffectEvent event) {
-        if(event.getNewEffect() != null && event.getNewEffect().getType().equals(PotionEffectType.INVISIBILITY) && event.getEntity() instanceof Player){
-            Player player = (Player) event.getEntity();
-            trackingPlayers.remove(player.getUniqueId());
+    public void playerChat(PlayerChatEvent event) {
+        if(event.getMessage().contains("lag") || event.getMessage().contains("lagging") || event.getMessage().contains("laggy") || event.getMessage().contains("lagged") && !(event.getMessage().contains("not lagging")) && !(event.getMessage().contains("not laggy") || !(event.getMessage().contains("didnt lag")))) {
+            Plugin essentials = Bukkit.getPluginManager().getPlugin("Essentials");
+            double tps = -1.0;
+            if (essentials != null && essentials.isEnabled())
+            {
+                IEssentials ess = (IEssentials)essentials;
+                EssentialsTimer timer = ess.getTimer();
+                if (timer != null)
+                {
+                    tps = timer.getAverageTPS();
+                }
+            }
+            if (tps > 20.0)
+            {
+                tps = 20.0;
+            }
+            double finalTps = tps;
+            Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+                @Override
+                public void run() {
+                    if (finalTps > 19.85) {
+                        getServer().broadcastMessage(ChatColor.AQUA + "The server currently has " + finalTps + " tps and is not lagging. Check your wifi/ping instead " + ChatColor.YELLOW + event.getPlayer().getName() + ". Decrease your render/simulation distance also it can be client lag and its recommended to use fabously optimized + simply optimized instead of lunar/badlion/vanilla/feather clients for more performance.");
+                    } else {
+                        getServer().broadcastMessage("The server currently has " + finalTps + " and could be lagging");
+                    }
+                }
+            }, 20);
+
         }
     }
 
-    public ICombatLogX getAPI() {
-        PluginManager pluginManager = Bukkit.getPluginManager();
-        Plugin plugin = pluginManager.getPlugin("CombatLogX");
-        return (ICombatLogX) plugin;
-    }
 
-    public boolean isInCombat(Player player) {
-        ICombatLogX plugin = getAPI();
-        ICombatManager combatManager = plugin.getCombatManager();
-        return combatManager.isInCombat(player);
-    }
+    @EventHandler
+    public void playerServerAge(PlayerChatEvent event) {
+        String message = event.getMessage().toLowerCase(); // Convert to lowercase
+        List<String> phrasesToMatch = Arrays.asList(
+                "how old is the server",
+                "when did the server start",
+                "how long has the server been",
+                "what's the server's age",
+                "since when has the server been running",
+                "when was the server established",
+                "what's the inception date of the server",
+                "tell me the server's age",
+                "from when has the server been active",
+                "when was this server created",
+                "how much time has the server been online",
+                "when was the server initiated",
+                "for how long has the server been live",
+                "what is the server's founding date",
+                "how much time has passed since the server's beginning",
+                "when was this server brought into being",
+                "when did the server first become active",
+                "from what time has the server been up",
+                "when did this server open up",
+                "how old is server",
+                "how long has the server been",
+                "how old server"
+        );
 
-    public boolean playerInvisCheck(Player player) {
-        for (PotionEffect effect : player.getActivePotionEffects()) {
-            if (effect.getType() == PotionEffectType.INVISIBILITY && !isInCombat(player)) {
-                return true;
+        for (String phrase : phrasesToMatch) {
+            if (message.contains(phrase)) {
+                LocalDateTime currentTime = LocalDateTime.now();
+                Duration duration = Duration.between(serverStartTime, currentTime);
+                long days = duration.toDays();
+                long hours = duration.toHoursPart();
+                long minutes = duration.toMinutesPart();
+
+                String uptimeMessage = String.format(
+                        "The server started on 7/27/23 12:00pm est and has been up for %d days, %d hours, and %d minutes.",
+                        days, hours, minutes
+                );
+
+                Bukkit.broadcastMessage(uptimeMessage);
+                break;
             }
         }
-        return false;
     }
 
 
@@ -146,11 +204,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
-            if (playerInvisCheck(target)) {
-                sender.sendMessage(ChatColor.RED + "Cannot track player because they are invis and not combat tagged");
-                return true;
-            }
-
             /*if(diamondBlockCount(player) > 0){
                 ItemStack block = new ItemStack(Material.DIAMOND_BLOCK, 1);
                 player.getInventory().removeItem(block);
@@ -189,6 +242,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return player.getStatistic(Statistic.TIME_SINCE_DEATH );
     }
 
+
     @EventHandler
     private void onPlayerDeath(PlayerDeathEvent e){
         Player player = e.getEntity();
@@ -224,6 +278,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                     if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
                                         distance = (int) player.getLocation().distance(portalLocation);
                                     } else {
+                                        player.sendMessage(ChatColor.RED + "Cannot measure the distance to the player because they are in a different dimension and haven't used a portal yet");
                                         distance = -1;
                                     }
                                 }
