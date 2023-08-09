@@ -28,6 +28,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -76,14 +77,15 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             {
                 tps = 20.0;
             }
-            double finalTps = tps;
+            DecimalFormat decimalFormat = new DecimalFormat("#.##");
+            double finalTps = Double.parseDouble(decimalFormat.format(tps));
             Bukkit.getScheduler().runTaskLater(this, new Runnable() {
                 @Override
                 public void run() {
-                    if (finalTps > 19.85) {
-                        getServer().broadcastMessage(ChatColor.AQUA + "The server currently has " + finalTps + " tps and is not lagging. Check your wifi/ping instead " + ChatColor.YELLOW + event.getPlayer().getName() + ". Decrease your render/simulation distance also it can be client lag and its recommended to use fabously optimized + simply optimized instead of lunar/badlion/vanilla/feather clients for more performance.");
+                    if (finalTps > 19.90) {
+                        getServer().broadcastMessage("The server currently has " + ChatColor.AQUA + finalTps + ChatColor.WHITE + " tps and is not lagging. Check your wifi/ping instead " + ChatColor.YELLOW + event.getPlayer().getName() + ChatColor.WHITE + ". Decrease your render/simulation distance plus it can also be client lag so its recommended for you to use fabously optimized + simply optimized instead of lunar/badlion/vanilla/feather clients for more performance.");
                     } else {
-                        getServer().broadcastMessage("The server currently has " + finalTps + " and could be lagging");
+                        getServer().broadcastMessage("The server currently has " + ChatColor.RED + finalTps + "tps and could be lagging");
                     }
                 }
             }, 20);
@@ -101,8 +103,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 "how long has the server been",
                 "what's the server's age",
                 "since when has the server been running",
-                "when was the server established",
-                "what's the inception date of the server",
                 "tell me the server's age",
                 "from when has the server been active",
                 "when was this server created",
@@ -117,7 +117,10 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 "when did this server open up",
                 "how old is server",
                 "how long has the server been",
-                "how old server"
+                "how old server",
+                "how old is this server",
+                "when did server start",
+                "server runtime"
         );
 
         for (String phrase : phrasesToMatch) {
@@ -129,7 +132,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 long minutes = duration.toMinutesPart();
 
                 String uptimeMessage = String.format(
-                        "The server started on 7/27/23 12:00pm est and has been up for %d days, %d hours, and %d minutes.",
+                        "The server started on" + ChatColor.AQUA + "7/27/23 12:00pm est" + ChatColor.WHITE + "and has been up for" + ChatColor.GOLD + "%d days, %d hours, and %d minutes.",
                         days, hours, minutes
                 );
 
@@ -278,11 +281,15 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                     if (portalLocation != null && player.getWorld() == portalLocation.getWorld()) {
                                         distance = (int) player.getLocation().distance(portalLocation);
                                     } else {
-                                        player.sendMessage(ChatColor.RED + "Cannot measure the distance to the player because they are in a different dimension and haven't used a portal yet");
                                         distance = -1;
                                     }
                                 }
-                                String message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away" ;
+                                String message;
+                                if (distance >= 0) {
+                                    message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away" ;
+                                } else {
+                                    message = ChatColor.RED + "Cannot measure the distance to the player because they are in a different dimension and haven't used a portal yet";
+                                }
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
                             } else {
