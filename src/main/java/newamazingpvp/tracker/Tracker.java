@@ -120,7 +120,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 "how old server",
                 "how old is this server",
                 "when did server start",
-                "server runtime"
+                "server runtime",
+                "what is server age",
+                "server age"
         );
 
         for (String phrase : phrasesToMatch) {
@@ -132,7 +134,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 long minutes = duration.toMinutesPart();
 
                 String uptimeMessage = String.format(
-                        "The server started on" + ChatColor.AQUA + "7/27/23 12:00pm est" + ChatColor.WHITE + "and has been up for" + ChatColor.GOLD + "%d days, %d hours, and %d minutes.",
+                        "The server started on" + ChatColor.AQUA + " 7/27/23 12:00pm est" + ChatColor.WHITE + " and has been up for" + ChatColor.GOLD + " %d days, %d hours, and %d minutes.",
                         days, hours, minutes
                 );
 
