@@ -82,10 +82,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             Bukkit.getScheduler().runTaskLater(this, new Runnable() {
                 @Override
                 public void run() {
-                    if (finalTps > 19.90) {
-                        getServer().broadcastMessage("The server currently has " + ChatColor.AQUA + finalTps + ChatColor.WHITE + " tps and is not lagging. Check your wifi/ping instead " + ChatColor.YELLOW + event.getPlayer().getName() + ChatColor.WHITE + ". Decrease your render/simulation distance plus it can also be client lag so its recommended for you to use fabously optimized + simply optimized instead of lunar/badlion/vanilla/feather clients for more performance.");
+                    if (finalTps > 19.93) {
+                        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
+                            p.sendMessage("The server currently has " + ChatColor.AQUA + finalTps + ChatColor.WHITE + " tps and is not lagging. Check your wifi/ping instead " + ChatColor.YELLOW + event.getPlayer().getName() + ChatColor.WHITE + ". Decrease your render/simulation distance plus it can also be client lag so its recommended for you to use fabously optimized + simply optimized instead of lunar/badlion/vanilla/feather clients for more performance.");
+                        }
                     } else {
-                        getServer().broadcastMessage("The server currently has " + ChatColor.RED + finalTps + "tps and could be lagging");
+                        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
+                          p.sendMessage("The server currently has " + ChatColor.RED + finalTps + "tps and could be lagging");
+                        }
                     }
                 }
             }, 20);
@@ -138,7 +142,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                         days, hours, minutes
                 );
 
-                Bukkit.broadcastMessage(uptimeMessage);
+                Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+                    @Override
+                    public void run() {
+                        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
+                            p.sendMessage(uptimeMessage);
+                        }
+                    }
+                }, 20);
                 break;
             }
         }
