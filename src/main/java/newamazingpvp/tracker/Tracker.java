@@ -61,7 +61,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     @EventHandler
     public void playerChat(PlayerChatEvent event) {
-        if(event.getMessage().contains("lag") || event.getMessage().contains("lagging") || event.getMessage().contains("laggy") || event.getMessage().contains("lagged") && !(event.getMessage().contains("not lagging")) && !(event.getMessage().contains("not laggy") || !(event.getMessage().contains("didnt lag")))) {
+        if(event.getMessage().contains("lag") || event.getMessage().contains("lagging") || event.getMessage().contains("laggy") || event.getMessage().contains("tps") || event.getMessage().contains("lagged") && !(event.getMessage().contains("not lagging")) && !(event.getMessage().contains("not laggy") || !(event.getMessage().contains("didnt lag")))) {
             Plugin essentials = Bukkit.getPluginManager().getPlugin("Essentials");
             double tps = -1.0;
             if (essentials != null && essentials.isEnabled())
