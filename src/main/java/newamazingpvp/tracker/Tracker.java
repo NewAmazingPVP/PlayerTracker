@@ -60,45 +60,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
 
     @EventHandler
-    public void playerChat(PlayerChatEvent event) {
-        if(event.getMessage().contains("lag") || event.getMessage().contains("lagging") || event.getMessage().contains("laggy") || event.getMessage().contains("tps") || event.getMessage().contains("lagged") && !(event.getMessage().contains("not lagging")) && !(event.getMessage().contains("not laggy") || !(event.getMessage().contains("didnt lag")))) {
-            Plugin essentials = Bukkit.getPluginManager().getPlugin("Essentials");
-            double tps = -1.0;
-            if (essentials != null && essentials.isEnabled())
-            {
-                IEssentials ess = (IEssentials)essentials;
-                EssentialsTimer timer = ess.getTimer();
-                if (timer != null)
-                {
-                    tps = timer.getAverageTPS();
-                }
-            }
-            if (tps > 20.0)
-            {
-                tps = 20.0;
-            }
-            DecimalFormat decimalFormat = new DecimalFormat("#.##");
-            double finalTps = Double.parseDouble(decimalFormat.format(tps));
-            Bukkit.getScheduler().runTaskLater(this, new Runnable() {
-                @Override
-                public void run() {
-                    if (finalTps > 19.93) {
-                        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
-                            p.sendMessage("The server currently has " + ChatColor.AQUA + finalTps + ChatColor.WHITE + " tps and is not lagging. Check your wifi/ping instead " + ChatColor.YELLOW + event.getPlayer().getName() + ChatColor.WHITE + ". Decrease your render/simulation distance plus it can also be client lag so its recommended for you to use fabously optimized + simply optimized instead of lunar/badlion/vanilla/feather clients for more performance.");
-                        }
-                    } else {
-                        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
-                          p.sendMessage("The server currently has " + ChatColor.RED + finalTps + "tps and could be lagging");
-                        }
-                    }
-                }
-            }, 20);
-
-        }
-    }
-
-
-    @EventHandler
     public void playerServerAge(PlayerChatEvent event) {
         String message = event.getMessage().toLowerCase(); // Convert to lowercase
         List<String> phrasesToMatch = Arrays.asList(
