@@ -1,38 +1,25 @@
 package newamazingpvp.tracker;
 
-import com.earth2me.essentials.EssentialsTimer;
-import com.earth2me.essentials.IEssentials;
-import com.github.sirblobman.combatlogx.api.ICombatLogX;
-import com.github.sirblobman.combatlogx.api.manager.ICombatManager;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityPotionEffectEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerChatEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.CompassMeta;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.CompassMeta;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
-import java.text.DecimalFormat;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.UUID;
 
 public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
@@ -41,7 +28,9 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     private boolean logOffTracking;
 
     public void onEnable() {
-        if (!getDataFolder().exists()) {getDataFolder().mkdir();}
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdir();
+        }
         Objects.requireNonNull(getCommand("track")).setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
         compassUpdate();
@@ -54,12 +43,12 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     //@EventHandler
     //public void onPlayerQuit(PlayerQuitEvent event) {
-       // trackingPlayers.remove(event.getPlayer().getUniqueId());
+    // trackingPlayers.remove(event.getPlayer().getUniqueId());
     //}
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent e){
-        if(trackingPlayers.containsValue(e.getPlayer().getUniqueId())){
+    public void onPlayerJoin(PlayerJoinEvent e) {
+        if (trackingPlayers.containsValue(e.getPlayer().getUniqueId())) {
             e.getPlayer().sendMessage(ChatColor.DARK_RED + "" + ChatColor.BOLD + "[WARNING] You are being tracked by unspecified amount of players!");
         }
 
@@ -81,8 +70,8 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             }
 
             if (getCompassFromInventory(player) == null) {
-                    sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
-                    return true;
+                sender.sendMessage(ChatColor.RED + "You need a compass in your inventory to use this command!");
+                return true;
             }
 
             Player target = Bukkit.getPlayer(args[0]);
@@ -92,9 +81,8 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 return true;
             }
 
-            if(!sender.getName().startsWith(".") && target.getName().startsWith("."))
-            {
-                if(!(trackingPlayers.get(target.getUniqueId()) == ((Player) sender).getUniqueId())){
+            if (!sender.getName().startsWith(".") && target.getName().startsWith(".")) {
+                if (!(trackingPlayers.get(target.getUniqueId()) == ((Player) sender).getUniqueId())) {
                     sender.sendMessage(ChatColor.RED + "You cannot track this bedrock player because you are on java and they are not tracking you!");
                     return true;
                 }
@@ -174,10 +162,10 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     }
 
     private long getDeathTime(Player player) {
-        return player.getStatistic(Statistic.TIME_SINCE_DEATH );
+        return player.getStatistic(Statistic.TIME_SINCE_DEATH);
     }
 
-    private boolean playerDiedRecently(Player target){
+    private boolean playerDiedRecently(Player target) {
         long targetDeathTime = getDeathTime(target);
         long requiredDeathTime = 15 * 60 * 20;
 
@@ -224,7 +212,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                 }
                                 String message;
                                 if (distance >= 0) {
-                                    message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away" ;
+                                    message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away";
                                 } else {
                                     message = ChatColor.RED + "Cannot measure the distance to the player because they are in a different dimension and haven't used a portal yet";
                                 }
@@ -264,7 +252,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     }
 
 
-
     private Location generateRandomLocation(Player player) {
         int offsetX = (int) (Math.random() * 201) - 100;
         int offsetZ = (int) (Math.random() * 201) - 100;
@@ -292,6 +279,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             compass.setItemMeta(compassMeta);
         }
     }
+
     private void setLodestoneCompass(ItemStack compass, Location location) {
         CompassMeta compassMeta = (CompassMeta) compass.getItemMeta();
         assert compassMeta != null;
