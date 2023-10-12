@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChatEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -39,8 +40,6 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
     private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
     private boolean logOffTracking;
 
-    private final LocalDateTime serverStartTime = LocalDateTime.of(2023, 7, 27, 11, 30);
-
     public void onEnable() {
         if (!getDataFolder().exists()) {getDataFolder().mkdir();}
         Objects.requireNonNull(getCommand("track")).setExecutor(this);
@@ -53,9 +52,17 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         lastPortalLocations.put(event.getPlayer().getUniqueId(), event.getFrom());
     }
 
+    //@EventHandler
+    //public void onPlayerQuit(PlayerQuitEvent event) {
+       // trackingPlayers.remove(event.getPlayer().getUniqueId());
+    //}
+
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        trackingPlayers.remove(event.getPlayer().getUniqueId());
+    public void onPlayerJoin(PlayerJoinEvent e){
+        if(trackingPlayers.containsValue(e.getPlayer().getUniqueId())){
+            e.getPlayer().sendMessage(ChatColor.DARK_RED + "" + ChatColor.BOLD + "[WARNING] You are being tracked by unspecified amount of players!");
+        }
+
     }
 
 
@@ -83,6 +90,14 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
             if (target == null) {
                 sender.sendMessage(ChatColor.RED + "Player not found!");
                 return true;
+            }
+
+            if(!sender.getName().startsWith(".") && target.getName().startsWith("."))
+            {
+                if(!(trackingPlayers.get(target.getUniqueId()) == ((Player) sender).getUniqueId())){
+                    sender.sendMessage(ChatColor.RED + "You cannot track this bedrock player because you are on java and they are not tracking you!");
+                    return true;
+                }
             }
 
             long targetPlaytime = getPlaytime(target);
@@ -162,12 +177,18 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         return player.getStatistic(Statistic.TIME_SINCE_DEATH );
     }
 
+    private boolean playerDiedRecently(Player target){
+        long targetDeathTime = getDeathTime(target);
+        long requiredDeathTime = 15 * 60 * 20;
 
-    @EventHandler
+        return targetDeathTime < requiredDeathTime;
+    }
+
+    /*@EventHandler
     private void onPlayerDeath(PlayerDeathEvent e){
         Player player = e.getEntity();
         trackingPlayers.remove(player.getUniqueId());
-    }
+    }*/
 
     private void compassUpdate() {
         new BukkitRunnable() {
@@ -178,7 +199,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                         Player target = Bukkit.getPlayer(trackingPlayers.get(playerUUID));
                         ItemStack compass = getCompassFromInventory(player);
                         if (compass != null) {
-                            if (target != null) {
+                            if (target != null && !playerDiedRecently(target)) {
                                 if (player.getWorld().getEnvironment() == World.Environment.NORMAL && target.getWorld().getEnvironment() == World.Environment.NORMAL) {
                                     setNormalCompass(compass);
                                     player.setCompassTarget(target.getLocation());
