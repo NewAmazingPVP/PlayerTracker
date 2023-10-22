@@ -90,7 +90,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                 }
             }
             Player g = (Player) sender;
-            if(g.getInventory().getChestplate() != null && (isElytra(g.getInventory().getChestplate()))){
+            if((isElytra(g))){
                 sender.sendMessage(ChatColor.RED + "You cannot track while having elytra!!!");
                 return true;
             }
@@ -195,19 +195,23 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         Player player = event.getPlayer();
         ItemStack newArmorPiece = event.getOldItem();
 
-        if (newArmorPiece != null && isElytra(newArmorPiece)) {
+        if (isElytratest(newArmorPiece)) {
             elytraTrackCooldown.remove(player.getUniqueId());
             elytraTrackCooldown.put(player.getUniqueId(), System.currentTimeMillis()+7200000);
         }
     }
 
-    private boolean isPlayerElytraCooldown(Player p){
-        long value = elytraTrackCooldown.get(p.getUniqueId());
-        return value > System.currentTimeMillis();
+    private boolean isPlayerElytraCooldown(Player p) {
+        Long value = elytraTrackCooldown.get(p.getUniqueId());
+        return value != null && value > System.currentTimeMillis();
     }
 
-    private boolean isElytra(ItemStack item) {
-        return item.getType().toString().toLowerCase().contains("elytra");
+    private boolean isElytratest(ItemStack t) {
+        return t.getType().toString().toLowerCase().contains("elytra");
+    }
+    private boolean isElytra(Player p) {
+        if(p.getInventory().getChestplate() == null) return false;
+        return p.getInventory().getChestplate().getType().toString().toLowerCase().contains("elytra");
     }
 
     private void compassUpdate() {
@@ -220,7 +224,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                         ItemStack compass = getCompassFromInventory(player);
                         if (compass != null) {
                             if (target != null && !playerDiedRecently(target) &&
-                                    (player.getInventory().getChestplate() != null && !(isElytra(player.getInventory().getChestplate())) && !isPlayerElytraCooldown(player))) {
+                                    !isElytra(player) && !isPlayerElytraCooldown(player)) {
                                 if (player.getWorld().getEnvironment() == World.Environment.NORMAL && target.getWorld().getEnvironment() == World.Environment.NORMAL) {
                                     setNormalCompass(compass);
                                     player.setCompassTarget(target.getLocation());
@@ -245,9 +249,10 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                                 }
                                 String message;
                                 if (distance >= 0) {
-                                    message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away";
+                                    //message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName() + " " + ChatColor.AQUA + distance + ChatColor.GREEN + " blocks away";
+                                    message = ChatColor.GREEN + "Tracking " + ChatColor.BOLD + target.getName();
                                 } else {
-                                    message = ChatColor.RED + "Cannot measure the distance to the player because they are in a different dimension and haven't used a portal yet";
+                                    message = ChatColor.RED + "Cannot track player because they are in a different dimension and haven't used a portal yet";
                                 }
                                 TextComponent textComponent = new TextComponent(message);
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
