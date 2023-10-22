@@ -1,5 +1,6 @@
 package newamazingpvp.tracker;
 
+import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
@@ -25,6 +26,7 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
 
     private final HashMap<UUID, UUID> trackingPlayers = new HashMap<>();
     private final HashMap<UUID, Location> lastPortalLocations = new HashMap<>();
+    private final HashMap<UUID, Long> elytraTrackCooldown = new HashMap<>();
     private boolean logOffTracking;
 
     public void onEnable() {
@@ -86,6 +88,16 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                     sender.sendMessage(ChatColor.RED + "You cannot track this bedrock player because you are on java and they are not tracking you!");
                     return true;
                 }
+            }
+            Player g = (Player) sender;
+            if(g.getInventory().getChestplate() != null && (isElytra(g.getInventory().getChestplate()))){
+                sender.sendMessage(ChatColor.RED + "You cannot track while having elytra!!!");
+                return true;
+            }
+
+            if(isPlayerElytraCooldown(g)){
+                sender.sendMessage(ChatColor.RED + "You have used elytra in last two hours so you cannot track!");
+                return true;
             }
 
             long targetPlaytime = getPlaytime(target);
@@ -178,6 +190,26 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
         trackingPlayers.remove(player.getUniqueId());
     }*/
 
+    @EventHandler
+    public void onArmorChange(PlayerArmorChangeEvent event) {
+        Player player = event.getPlayer();
+        ItemStack newArmorPiece = event.getOldItem();
+
+        if (newArmorPiece != null && isElytra(newArmorPiece)) {
+            elytraTrackCooldown.remove(player.getUniqueId());
+            elytraTrackCooldown.put(player.getUniqueId(), System.currentTimeMillis()+7200000);
+        }
+    }
+
+    private boolean isPlayerElytraCooldown(Player p){
+        long value = elytraTrackCooldown.get(p.getUniqueId());
+        return value > System.currentTimeMillis();
+    }
+
+    private boolean isElytra(ItemStack item) {
+        return item.getType().toString().toLowerCase().contains("elytra");
+    }
+
     private void compassUpdate() {
         new BukkitRunnable() {
             public void run() {
@@ -187,7 +219,8 @@ public class Tracker extends JavaPlugin implements CommandExecutor, Listener {
                         Player target = Bukkit.getPlayer(trackingPlayers.get(playerUUID));
                         ItemStack compass = getCompassFromInventory(player);
                         if (compass != null) {
-                            if (target != null && !playerDiedRecently(target)) {
+                            if (target != null && !playerDiedRecently(target) &&
+                                    (player.getInventory().getChestplate() != null && !(isElytra(player.getInventory().getChestplate())) && !isPlayerElytraCooldown(player))) {
                                 if (player.getWorld().getEnvironment() == World.Environment.NORMAL && target.getWorld().getEnvironment() == World.Environment.NORMAL) {
                                     setNormalCompass(compass);
                                     player.setCompassTarget(target.getLocation());
